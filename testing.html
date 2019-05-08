@@ -1,0 +1,389 @@
+<html>
+<style>
+    body {
+        margin: 0px 0px 0px 0px !important;
+        overflow: hidden;
+    }
+
+    canvas {
+        display: block;
+        background: rgb(0, 0, 0);
+    }
+</style>
+
+<body>
+    <canvas></canvas>
+</body>
+<script>
+    let numEnt = 15000;
+    let dist = 100000;
+    let fps = 60;
+    let renderTick = 1000 / fps;
+    let current_scale = 1;
+    let entities = [
+        {
+            x: -1,
+            y: 300,
+            s_x: 400,
+            s_y: 2,
+            id: "sun",
+            move: 0,
+            color: "orange"
+        },
+        {
+            x: -40000,
+            y: 13000,
+            s_x: 400,
+            s_y: 2,
+            id: "sun",
+            move: 0,
+            color: "orange"
+
+        },
+    ]
+    //https://codepen.io/pen/
+    let lines = []
+    /**
+    * @typedef {Object} ent
+    * @property {Number} x
+    * @property {Number} y
+    * @property {Number} s_x
+    * @param {ent} a
+    * @param {ent} b
+    */
+    function getDistance(a, b) {
+        let distance = Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+        return (Math.abs(distance));
+    }
+    function saveLine(x, y, a, b) {
+        let xx = { x: x, y: y, a: a, b: b }
+        lines.push(xx);
+        return xx
+    }
+    function s() {
+        let total = 30 + Math.round(Math.random() * 100)
+        console.log("Start...");
+        let distance = dist
+
+        for (var i = 0; i < total; i++) {
+            let n = {
+                x: (Math.random() * distance * 2) - distance,
+                y: (Math.random() * distance * 2) - distance,
+                s_x: 300 + Math.round(Math.random()*300),
+                s_y: 2,
+                id: "sun",
+                move: 0,
+                color: "orange"
+            };
+            let good = true;
+            entities.forEach(f => {
+                // console.log("Distance", i, f.id, getDistance(f, n));
+                if (getDistance(f, n) < 14000) {
+                    good = false;
+                }
+            })
+            if (good) {
+                entities.push(n);
+            }
+        }
+    }
+    s();
+    function r() {
+        for (var i = 0; i < numEnt; i++) {
+            let s = 100
+            let distance = dist
+            let n = {
+                x: (Math.random() * distance * 2) - distance,
+                y: (Math.random() * distance * 2) - distance,
+                s_x: s,
+                s_y: s,
+                id: i,
+            }
+            let good = true;
+            let close = null;
+            let min = Number.MAX_SAFE_INTEGER;
+            entities.forEach(f => {
+                if (getDistance(f, n) < 400) {
+                    good = false;
+                } else {
+
+                }
+
+            })
+            let sun = false;
+            entities.forEach(f => {
+                if ((getDistance(f, n) > f.s_x + 600 && getDistance(f, n) < f.s_x + 6000) && f.id == "sun") {
+                    sun = true;
+                    saveLine(n.x, n.y, f.x, f.y);
+
+                }
+            })
+
+            if (close != null && good && min < 600) {
+            }
+            if (good && sun) {
+                entities.push(n);
+            }
+        }
+    }
+    r();
+    var canvas = document.getElementsByTagName('canvas')[0];
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    var ctx = canvas.getContext('2d');
+
+    var gkhead = new Image;
+    console.log(entities.length)
+    window.onload = function () {
+        window.onresize = function () {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            current_scale = 1;
+            var ctx = canvas.getContext('2d');
+            trackTransforms(ctx);
+            // ctx.translate(0, canvas.height / 2);
+            redraw()
+
+        }
+        trackTransforms(ctx);
+
+        ctx.translate(-40000, 13000);
+
+        function drawLine(object) {
+            ctx.beginPath();
+            ctx.fillText(`Planet:`, object.x, object.y);
+            ctx.moveTo(object.x, object.y);
+            ctx.lineTo(object.a, object.b);
+            ctx.stroke();
+        }
+
+        let tick = 0;
+        let start = new Date();
+        function redraw() {
+            // Clear the entire canvas
+            var p1 = ctx.transformedPoint(0, 0);
+            var p2 = ctx.transformedPoint(canvas.width, canvas.height);
+            ctx.clearRect(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y);
+
+            ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.restore();
+            // Green rectangle
+            //Render Game
+            let rendered = 0;
+            let killed = 0;
+            lines.forEach(object => {
+                let realX = ctx.getTransform().e + (object.a * current_scale);
+                let realY = ctx.getTransform().f + (object.b * current_scale);
+                // console.log("Real", object.id, Math.round(realX), Math.round(realY));
+
+                if (realX < 0 || realX > canvas.width) {
+                    killed++
+                    return;
+                }
+                if (realY < 0 || realY > canvas.height) {
+                    killed++
+                    return;
+                }
+                rendered++;
+                drawLine(object);
+            })
+            // let pt=null;
+            entities.forEach(object => {
+                if (object.move) {
+                    object.x = object.x + object.move;
+                }
+                // console.log(object.id, ctx.transformedPoint(object.x, object.y))
+                let pt = ctx.transformedPoint(object.x, object.y);
+
+
+                //Block render;
+                let maxY = canvas.height / current_scale;
+                let maxX = canvas.width / current_scale;
+
+                let realX = ctx.getTransform().e + (object.x * current_scale);
+                let realY = ctx.getTransform().f + (object.y * current_scale);
+                // console.log("Real", object.id, Math.round(realX), Math.round(realY));
+
+                if (realX < 0 || realX > canvas.width) {
+                    killed++
+                    return;
+                }
+                if (realY < 0 || realY > canvas.height) {
+                    killed++
+                    return;
+                }
+
+                // console.log(pt)
+                if (rendered >= 3000) {
+                    killed++;
+                    return;
+                }
+                rendered++;
+
+                ctx.beginPath();
+                ctx.strokeStyle = "white";
+                ctx.lineWidth = "1";
+                // ctx.rect(object.x, object.y, object.s_x, object.s_y);
+                ctx.arc(object.x, object.y, object.s_x, 0, 2 * Math.PI);
+                ctx.fillStyle = object.color || "green";
+                ctx.fill();
+                ctx.fillStyle = "white";
+                let t = pt.y - object.y;
+                ctx.fillText(`ID: ${object.id}  X: ${Math.round(realX)} Y:${Math.round(realY)}  Height: ${Math.round(canvas.height / current_scale)} Scale: ${current_scale}`, object.x - 100, object.y - 10);
+                ctx.fillStyle = "white";
+                ctx.rect(object.x - 1, object.y - 1, 2, 2);
+                ctx.stroke();
+            })
+            tick++;
+            if (tick >= 1000 / renderTick) {
+                console.log("Render Time: ", Math.round((new Date().valueOf() - start.valueOf()) / (9000 / renderTick)), "ms");
+                console.log(rendered, killed);
+                tick = 0;
+                start = new Date();
+            }
+        }
+        redraw();
+
+        var lastX = canvas.width / 2, lastY = canvas.height / 2;
+
+        var dragStart, dragged;
+
+        canvas.addEventListener('mousedown', function (evt) {
+            document.body.style.mozUserSelect = document.body.style.webkitUserSelect = document.body.style.userSelect = 'none';
+            lastX = evt.offsetX || (evt.pageX - canvas.offsetLeft);
+            lastY = evt.offsetY || (evt.pageY - canvas.offsetTop);
+            dragStart = ctx.transformedPoint(lastX, lastY);
+            dragged = false;
+        }, false);
+
+        canvas.addEventListener('mousemove', function (evt) {
+            lastX = evt.offsetX || (evt.pageX - canvas.offsetLeft);
+            lastY = evt.offsetY || (evt.pageY - canvas.offsetTop);
+            dragged = true;
+            if (dragStart) {
+                var pt = ctx.transformedPoint(lastX, lastY);
+                ctx.translate(pt.x - dragStart.x, pt.y - dragStart.y);
+                // redraw();
+            }
+        }, false);
+
+        let coords = null;
+
+        canvas.addEventListener('contextmenu', function (evt) { // Right click
+            evt.preventDefault();
+            lastX = evt.offsetX || (evt.pageX - canvas.offsetLeft);
+            lastY = evt.offsetY || (evt.pageY - canvas.offsetTop);
+            var pt = ctx.transformedPoint(lastX, lastY);
+            console.log(pt.x, pt.y)
+
+            if (coords) {
+                saveLine(pt.x, pt.y, coords.x, coords.y);
+                // redraw();
+                coords = null;
+            } else {
+                coords = pt;
+            }
+        })
+
+        canvas.addEventListener('mouseup', function (evt) {
+
+            dragStart = null;
+            // if (!dragged) zoom(evt.shiftKey ? -1 : 1);
+        }, false);
+
+        var scaleFactor = 1.1;
+
+        var zoom = function (clicks) {
+            var pt = ctx.transformedPoint(lastX, lastY);
+            ctx.translate(pt.x, pt.y);
+            var factor = Math.pow(scaleFactor, clicks);
+            ctx.scale(factor, factor);
+            current_scale = current_scale * factor;
+            ctx.translate(-pt.x, -pt.y);
+            // redraw();
+        }
+
+        var handleScroll = function (evt) {
+            var delta = evt.wheelDelta ? evt.wheelDelta / 40 : evt.detail ? -evt.detail : 0;
+            if (delta) zoom(delta);
+            return evt.preventDefault() && false;
+        };
+
+        canvas.addEventListener('DOMMouseScroll', handleScroll, false);
+        canvas.addEventListener('mousewheel', handleScroll, false);
+
+        let timerId = setInterval(() => { redraw() }, renderTick);
+    };
+
+    // Adds ctx.getTransform() - returns an SVGMatrix
+    // Adds ctx.transformedPoint(x,y) - returns an SVGPoint
+    function trackTransforms(ctx) {
+        var svg = document.createElementNS("http://www.w3.org/2000/svg", 'svg');
+        var xform = svg.createSVGMatrix();
+        ctx.getTransform = function () { return xform; };
+
+        var savedTransforms = [];
+        var save = ctx.save;
+        ctx.save = function () {
+            savedTransforms.push(xform.translate(0, 0));
+            return save.call(ctx);
+        };
+
+        ctx.getTransforms = function () {
+            return savedTransforms;
+        }
+
+        var restore = ctx.restore;
+        ctx.restore = function () {
+            xform = savedTransforms.pop();
+            return restore.call(ctx);
+        };
+
+        var scale = ctx.scale;
+        ctx.scale = function (sx, sy) {
+            xform = xform.scaleNonUniform(sx, sy);
+            return scale.call(ctx, sx, sy);
+        };
+
+        var rotate = ctx.rotate;
+        ctx.rotate = function (radians) {
+            xform = xform.rotate(radians * 180 / Math.PI);
+            return rotate.call(ctx, radians);
+        };
+
+        var translate = ctx.translate;
+        ctx.translate = function (dx, dy) {
+            xform = xform.translate(dx, dy);
+            return translate.call(ctx, dx, dy);
+        };
+
+        var transform = ctx.transform;
+        ctx.transform = function (a, b, c, d, e, f) {
+            var m2 = svg.createSVGMatrix();
+            m2.a = a; m2.b = b; m2.c = c; m2.d = d; m2.e = e; m2.f = f;
+            xform = xform.multiply(m2);
+            return transform.call(ctx, a, b, c, d, e, f);
+        };
+
+        var setTransform = ctx.setTransform;
+        ctx.setTransform = function (a, b, c, d, e, f) {
+            xform.a = a;
+            xform.b = b;
+            xform.c = c;
+            xform.d = d;
+            xform.e = e;
+            xform.f = f;
+            return setTransform.call(ctx, a, b, c, d, e, f);
+        };
+
+        var pt = svg.createSVGPoint();
+        ctx.transformedPoint = function (x, y) {
+            pt.x = x; pt.y = y;
+            return pt.matrixTransform(xform.inverse());
+        }
+    }
+</script>
+
+</html>
