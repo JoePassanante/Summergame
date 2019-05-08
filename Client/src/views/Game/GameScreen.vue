@@ -24,7 +24,7 @@ export default {
       tick: 0,
       numEnt: 15000,
       dist: 100000,
-      fps: 60,
+      fps: 120,
       renderTick: null,
       scaleFactor: 1.1,
       start: new Date(),
@@ -95,7 +95,7 @@ export default {
     },
     configureCanvas() {
       this.canvas.width = window.innerWidth;
-      this.canvas.height = window.innerHeight - 300;
+      this.canvas.height = window.innerHeight - 100;
       this.trackTransforms(this.ctx);
     },
     /**
